@@ -26,6 +26,10 @@
       {
         "Title": "Stepped",
         "Path": "charts/line/stepped"
+      },
+      {
+        "Title": "TimeBased",
+        "Path": "charts/line/timebased"
       }
     ]
   },

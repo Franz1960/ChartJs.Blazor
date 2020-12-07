@@ -1,0 +1,147 @@
+﻿@page "/charts/line/timebased"
+@using ChartJs.Blazor.LineChart
+@layout SampleLayout
+
+<Chart Config="_config" @ref="_chart"></Chart>
+
+<button @onclick="RandomizeData">Randomize Data</button>
+<button @onclick="AddDataset">Add Dataset</button>
+<button @onclick="RemoveDataset">Remove Dataset</button>
+<button @onclick="AddData">Add Data</button>
+<button @onclick="RemoveData">Remove Data</button>
+
+@code {
+      private const int InitalCount = 7;
+      private LineConfig _config;
+      private Random _rng = new Random();
+      private Chart _chart;
+
+      protected override void OnInitialized() {
+          _config = new LineConfig {
+              Options = new LineOptions {
+                  Responsive = true,
+                  Title = new OptionsTitle {
+                      Display = true,
+                      Text = "ChartJs.Blazor Line Chart"
+                  },
+                  Tooltips = new Tooltips {
+                      Mode = InteractionMode.Nearest,
+                      Intersect = true
+                  },
+                  Hover = new Hover {
+                      Mode = InteractionMode.Nearest,
+                      Intersect = true
+                  },
+                  Scales = new Scales {
+                      XAxes = new List<CartesianAxis>
+                      {
+                        new TimeAxis
+                        {
+                        }
+                    },
+                      YAxes = new List<CartesianAxis>
+                      {
+                        new LinearCartesianAxis
+                        {
+                            ScaleLabel = new ScaleLabel
+                            {
+                                LabelString = "Value"
+                            }
+                        }
+                    }
+                  }
+              }
+          };
+
+          IDataset<TimePoint> dataset1 = new LineDataset<TimePoint>(CreateTimePoints(InitalCount)) {
+              Label = "My first dataset",
+              BackgroundColor = ColorUtil.FromDrawingColor(ChartColors.Red),
+              BorderColor = ColorUtil.FromDrawingColor(ChartColors.Red),
+              Fill = FillingMode.Disabled
+          };
+
+          IDataset<TimePoint> dataset2 = new LineDataset<TimePoint>(CreateTimePoints(InitalCount)) {
+              Label = "My second dataset",
+              BackgroundColor = ColorUtil.FromDrawingColor(ChartColors.Blue),
+              BorderColor = ColorUtil.FromDrawingColor(ChartColors.Blue),
+              Fill = FillingMode.Disabled
+          };
+
+          _config.Data.Labels.AddRange(Months.Take(InitalCount));
+          _config.Data.Datasets.Add(dataset1);
+          _config.Data.Datasets.Add(dataset2);
+      }
+
+      private void RandomizeData() {
+          foreach (IDataset<TimePoint> dataset in _config.Data.Datasets) {
+              int count = dataset.Count;
+              dataset.Clear();
+              dataset.AddRange(CreateTimePoints(count));
+          }
+
+          _chart.Update();
+      }
+
+      private void AddDataset() {
+          string color = ColorUtil.FromDrawingColor(ChartColors.All[_config.Data.Datasets.Count % ChartColors.All.Count]);
+          IDataset<TimePoint> dataset = new LineDataset<TimePoint>(CreateTimePoints(_config.Data.Labels.Count)) {
+              Label = $"Dataset {_config.Data.Datasets.Count}",
+              BackgroundColor = color,
+              BorderColor = color,
+              Fill = FillingMode.Disabled
+          };
+
+          _config.Data.Datasets.Add(dataset);
+          _chart.Update();
+      }
+
+      private void RemoveDataset() {
+          IList<IDataset> datasets = _config.Data.Datasets;
+          if (datasets.Count == 0)
+              return;
+
+          datasets.RemoveAt(datasets.Count - 1);
+          _chart.Update();
+      }
+
+      private void AddData() {
+          if (_config.Data.Datasets.Count == 0)
+              return;
+
+          string month = Months[_config.Data.Labels.Count % Months.Count];
+          _config.Data.Labels.Add(month);
+
+          foreach (IDataset<TimePoint> dataset in _config.Data.Datasets) {
+              dataset.Add(CreateTimePoints(1).First());
+          }
+
+      _chart.Update();
+  }
+
+  private void RemoveData() {
+      if (_config.Data.Datasets.Count == 0)
+          return;
+
+      _config.Data.Labels.RemoveAt(_config.Data.Labels.Count - 1);
+
+      foreach (IDataset<TimePoint> dataset in _config.Data.Datasets) {
+          dataset.RemoveAt(dataset.Count - 1);
+      }
+
+      _chart.Update();
+  }
+
+  private static IEnumerable<TimePoint> CreateTimePoints(int nCount = 100) {
+      var rng = new Random();
+      var dtNow = DateTime.Now;
+      var dtMin = new DateTime(dtNow.Year-1,1,1);
+      var dtMax = new DateTime(dtNow.Year+1,1,1);
+      var lData = new List<TimePoint>();
+      for (int i = 0;i<nCount;i++) {
+          var tp = new TimePoint(new DateTime(dtMin.Ticks+(long)(rng.NextDouble()*(dtMax.Ticks-dtMin.Ticks))),rng.Next(-100,100));
+          lData.Add(tp);
+      }
+      lData.Sort((tp1,tp2) => tp1.Time.CompareTo(tp2.Time));
+      return lData;
+  }
+}
